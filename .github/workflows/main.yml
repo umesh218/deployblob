@@ -4,47 +4,41 @@ on:
   push:
     branches: [ "master" ]
 
-env:
-  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production  # Optional but recommended
 
     steps:
       # 1. Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Login to Azure (using environment variables)
+      # 2. Login to Azure using Azure CLI
       - name: Azure Login
         run: |
           az login --service-principal \
-            -u ${{ secrets.AZURE_CLIENT_ID }} \
-            -p ${{ secrets.AZURE_CLIENT_SECRET }} \
-            --tenant ${{ secrets.AZURE_TENANT_ID }}
-          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+            -u "${{ secrets.AZURE_CLIENT_ID }}" \
+            -p "${{ secrets.AZURE_CLIENT_SECRET }}" \
+            --tenant "${{ secrets.AZURE_TENANT_ID }}"
+          az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
 
       # 3. Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
 
-      # 4. Terraform Init
+      # 4. Terraform Commands
       - name: Terraform Init
         run: terraform init
 
-      # 5. Terraform Validate
       - name: Terraform Validate
         run: terraform validate
 
-      # 6. Terraform Plan
       - name: Terraform Plan
         run: terraform plan -input=false
 
-      # 7. Terraform Apply (only on master branch)
       - name: Terraform Apply
         if: github.ref == 'refs/heads/master'
         run: terraform apply -auto-approve -input=false
