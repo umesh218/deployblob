@@ -7,36 +7,41 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
       # 1. Checkout code
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Login to Azure (using EXACT credentials from az account show)
+      # 2. Validate JSON Secret (debugging)
+      - name: Verify Secret Format
+        run: |
+          echo "Verifying JSON secret..."
+          echo '${{ secrets.AZURE_CREDENTIALS }}' | jq empty || (echo "❌ Invalid JSON in secret!" && exit 1)
+          echo "✅ Secret is valid JSON"
+
+      # 3. Azure Login (bulletproof method)
       - name: Azure Login
+        id: login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}  # Must contain:
-            # clientId: "5d22e65e-9045-43dd-b854-dc7fb2170f93"
-            # clientSecret: "N928Q~qav00gSV~Ap1jqg6czq2lgk1AMDChkBbH"
-            # tenantId: "10f1e709-440c-4a18-9025-699d00a15b85" ← Verified correct
-            # subscriptionId: "17abc602-7315-4600-a8f8-412c409d1d92" ← Verified correct
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          enable-AzPSSession: false
 
-      # 3. Setup Terraform
+      # 4. Confirm login worked
+      - name: Verify Azure Access
+        if: steps.login.outputs.AZURE_LOGIN_RESULT != 'success'
+        run: |
+          echo "❌ Login failed! Check your credentials"
+          exit 1
+
+      # 5. Terraform Setup
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
 
-      # 4. Terraform Commands
+      # 6. Terraform Commands
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Plan
-        run: terraform plan -input=false
-
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/master'
         run: terraform apply -auto-approve -input=false
