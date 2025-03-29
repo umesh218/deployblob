@@ -1,22 +1,19 @@
-name: Terraform Deployment
+name: Deploy to Azure with Terraform
 
 on:
   push:
     branches:
-      - master  # ✅ Updated to master
-  workflow_dispatch:  # ✅ Allows manual trigger
+      - master  # Change this if your default branch is different
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
   terraform:
-    name: 'Terraform Apply'
+    name: Terraform Deploy
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Verify Workflow Run
-        run: echo "✅ GitHub Actions workflow is running on branch master!"
 
       - name: Azure Login
         uses: azure/login@v1
@@ -25,14 +22,19 @@ jobs:
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
 
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
       - name: Initialize Terraform
         run: terraform init
 
       - name: Validate Terraform
         run: terraform validate
 
-      - name: Plan Terraform
-        run: terraform plan
+      - name: Plan Terraform Changes
+        run: terraform plan -out=tfplan
 
-      - name: Apply Terraform
-        run: terraform apply -auto-approve
+      - name: Apply Terraform Changes
+        run: terraform apply -auto-approve tfplan
