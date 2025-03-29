@@ -3,8 +3,8 @@ name: Terraform Deployment
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:  # ✅ Enables manual trigger
+      - master  # ✅ Updated to master
+  workflow_dispatch:  # ✅ Allows manual trigger
 
 jobs:
   terraform:
@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify Workflow Run
-        run: echo "✅ GitHub Actions workflow is running!"
+        run: echo "✅ GitHub Actions workflow is running on branch master!"
 
       - name: Azure Login
         uses: azure/login@v1
@@ -36,4 +36,3 @@ jobs:
 
       - name: Apply Terraform
         run: terraform apply -auto-approve
-
