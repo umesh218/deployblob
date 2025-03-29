@@ -1,44 +1,39 @@
-name: Deploy to Azure with Terraform
+name: Terraform Azure Deployment
 
 on:
   push:
-    branches:
-      - master  # Change this if your default branch is different
-  workflow_dispatch:  # Allows manual trigger
+    branches: [ "master" ]  # Runs only on pushes to 'master'
 
 jobs:
-  terraform:
-    name: Terraform Deploy
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      # 1. Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
+      # 2. Azure Login (using Client Secret)
       - name: Azure Login
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.ARM_CLIENT_ID }}
-          tenant-id: ${{ secrets.ARM_TENANT_ID }}
-          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}  # Uses your stored secret
 
-      - name: Install Terraform
+      # 3. Setup Terraform
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: latest
 
-      - name: Initialize Terraform
-        run: terraform init
-        working-directory: terraform/  # Change if needed
+      # 4. Run Terraform Commands
+      - name: Terraform Init & Plan
+        run: |
+          terraform init
+          terraform validate
+          terraform plan -input=false
 
-      - name: Validate Terraform
-        run: terraform validate
-        working-directory: terraform/
-
-      - name: Plan Terraform Changes
-        run: terraform plan -out=tfplan
-        working-directory: terraform/
-
-      - name: Apply Terraform Changes
-        run: terraform apply -auto-approve tfplan
-        working-directory: terraform/
+      # 5. Apply only if pushing to 'master'
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/master'
+        run: terraform apply -auto-approve -input=false
