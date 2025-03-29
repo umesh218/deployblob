@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:  # ✅ Enables manual trigger
 
 jobs:
   terraform:
@@ -13,11 +14,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.7.5
 
       - name: Verify Workflow Run
         run: echo "✅ GitHub Actions workflow is running!"
@@ -40,3 +36,4 @@ jobs:
 
       - name: Apply Terraform
         run: terraform apply -auto-approve
+
